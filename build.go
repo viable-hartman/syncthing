@@ -2,7 +2,7 @@
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
-// You can obtain one at http://mozilla.org/MPL/2.0/.
+// You can obtain one at https://mozilla.org/MPL/2.0/.
 
 // +build ignore
 
@@ -585,7 +585,7 @@ func buildSnap(target target) {
 		snapver = snapver[1:]
 	}
 	snapgrade := "devel"
-	if matched, _ := regexp.MatchString(`^\d+\.\d+\.\d+$`, snapver); matched {
+	if matched, _ := regexp.MatchString(`^\d+\.\d+\.\d+(-rc.\d+)?$`, snapver); matched {
 		snapgrade = "stable"
 	}
 	err = tmpl.Execute(f, map[string]string{

@@ -2,7 +2,7 @@
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
-// You can obtain one at http://mozilla.org/MPL/2.0/.
+// You can obtain one at https://mozilla.org/MPL/2.0/.
 
 // Package config implements reading and writing of the syncthing configuration file.
 package config
@@ -21,12 +21,13 @@ import (
 
 	"github.com/syncthing/syncthing/lib/protocol"
 	"github.com/syncthing/syncthing/lib/rand"
+	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/util"
 )
 
 const (
 	OldestHandledVersion = 10
-	CurrentVersion       = 17
+	CurrentVersion       = 19
 	MaxRescanIntervalS   = 365 * 24 * 60 * 60
 )
 
@@ -257,6 +258,12 @@ func (cfg *Configuration) clean() error {
 	if cfg.Version == 16 {
 		convertV16V17(cfg)
 	}
+	if cfg.Version == 17 {
+		convertV17V18(cfg)
+	}
+	if cfg.Version == 18 {
+		convertV18V19(cfg)
+	}
 
 	// Build a list of available devices
 	existingDevices := make(map[protocol.DeviceID]bool)
@@ -310,6 +317,42 @@ func (cfg *Configuration) clean() error {
 	return nil
 }
 
+func convertV18V19(cfg *Configuration) {
+	// Triggers a database tweak
+	cfg.Version = 19
+}
+
+func convertV17V18(cfg *Configuration) {
+	// Do channel selection for existing users. Those who have auto upgrades
+	// and usage reporting on default to the candidate channel. Others get
+	// stable.
+	if cfg.Options.URAccepted > 0 && cfg.Options.AutoUpgradeIntervalH > 0 {
+		cfg.Options.UpgradeToPreReleases = true
+	}
+
+	// Show a notification to explain what's going on, except if upgrades
+	// are disabled by compilation or environment variable in which case
+	// it's not relevant.
+	if !upgrade.DisabledByCompilation && os.Getenv("STNOUPGRADE") == "" {
+		cfg.Options.UnackedNotificationIDs = append(cfg.Options.UnackedNotificationIDs, "channelNotification")
+	}
+
+	cfg.Version = 18
+}
+
+func convertV16V17(cfg *Configuration) {
+	for i := range cfg.Folders {
+		cfg.Folders[i].Fsync = true
+	}
+
+	cfg.Version = 17
+}
+
+func convertV15V16(cfg *Configuration) {
+	// Triggers a database tweak
+	cfg.Version = 16
+}
+
 func convertV14V15(cfg *Configuration) {
 	// Undo v0.13.0 broken migration
 
@@ -323,19 +366,6 @@ func convertV14V15(cfg *Configuration) {
 	}
 
 	cfg.Version = 15
-}
-
-func convertV15V16(cfg *Configuration) {
-	// Triggers a database tweak
-	cfg.Version = 16
-}
-
-func convertV16V17(cfg *Configuration) {
-	for i := range cfg.Folders {
-		cfg.Folders[i].Fsync = true
-	}
-
-	cfg.Version = 17
 }
 
 func convertV13V14(cfg *Configuration) {
