@@ -4,7 +4,7 @@ Documentation=man:syncthing(1)
 Wants=syncthing-inotify.service
 
 [Service]
-ExecStart=/usr/bin/syncthing -no-browser -no-restart -logflags=0
+ExecStart=/usr/bin/syncthing -home=/etc/syncthing -no-browser -no-restart -logflags=0 -logfile=/dev/null
 Restart=on-failure
 SuccessExitStatus=3 4
 RestartForceExitStatus=3 4
